@@ -45,13 +45,31 @@ test('sends optimistic revision when saving Story content', async () => {
 });
 
 test('surfaces the current revision on a write conflict', async () => {
+  const revision = 'b'.repeat(64);
   const fetchImpl = async () => json({
     success: false,
     message: 'Story content changed',
-    currentRevision: 'b'.repeat(64)
+    currentRevision: revision
   }, 409);
   await assert.rejects(
     () => new StoryApiClient({ env, fetchImpl }).updateStory('P-1-a', {}, 'a'.repeat(64)),
-    new RegExp(`Current revision: ${'b'.repeat(64)}`)
+    new RegExp(`Current revision: ${revision}`)
+  );
+});
+
+test('does not duplicate revision already present in the API message', async () => {
+  const revision = 'b'.repeat(64);
+  const fetchImpl = async () => json({
+    success: false,
+    message: `Story content changed. Current revision: ${revision}`,
+    currentRevision: revision
+  }, 409);
+  await assert.rejects(
+    () => new StoryApiClient({ env, fetchImpl }).updateStory('P-1-a', {}, 'a'.repeat(64)),
+    (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.equal(error.message, `Story content changed. Current revision: ${revision}`);
+      return true;
+    }
   );
 });

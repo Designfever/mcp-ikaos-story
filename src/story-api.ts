@@ -91,10 +91,11 @@ export class StoryApiClient {
     });
     const body = (await response.json().catch(() => null)) as ApiResponse<T> | null;
     if (!response.ok || !body?.success || body.data === undefined) {
-      const suffix = body?.currentRevision !== undefined
+      const message = body?.message || `${response.status} ${response.statusText}`;
+      const suffix = body?.currentRevision !== undefined && !message.includes('Current revision:')
         ? ` Current revision: ${body.currentRevision ?? 'none'}`
         : '';
-      throw new Error(`${body?.message || `${response.status} ${response.statusText}`}${suffix}`);
+      throw new Error(`${message}${suffix}`);
     }
     return body.data;
   }
