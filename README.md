@@ -9,7 +9,8 @@ The MCP talks to the authenticated iKAOS Story API. Users do not need to clone `
 - `get_story_context` returns the current content revision and authoritative `docsLink`.
 - `save_story_content` writes only `content_data`; source, docs, Story identity, and production metadata cannot be changed.
 - Every content write requires the exact current revision. A stale edit returns a conflict instead of overwriting newer content.
-- Image generation is out of scope. Designers can upload, replace, organize, and delete supplied image files through df-sheet storage.
+- Image generation is out of scope. Designers can upload and replace supplied image files through DF Asset Hub.
+- Asset Hub does not currently expose list or delete APIs. Removing an image URL from Story content does not remove its R2 object.
 - No Supabase service key is distributed to MCP users.
 
 ## Install
@@ -22,44 +23,40 @@ npm run build
 Configure the Story API:
 
 ```bash
-export IKAOS_STORY_API_URL=https://your-ikaos-preview.vercel.app
+export IKAOS_STORY_API_URL=https://ikaos-content-studio-v2026.vercel.app
 export IKAOS_STORY_API_TOKEN=your-project-scoped-api-token
-export IKAOS_STORY_PREVIEW_URL=https://your-ikaos-preview.vercel.app
 ```
 
-Image tools additionally require:
+Image uploads use these defaults, so users do not need a df-login token:
 
 ```bash
-export DF_SHEET_URL=https://your-df-sheet.vercel.app
-export DF_SHEET_PROJECT_ID=your-project-uuid
-export DF_SHEET_ACCESS_TOKEN=your-df-login-review-access-token
+export DF_ASSET_UPLOAD_URL=https://df-asset-hub.vercel.app/api/review/figma-images/upload
+export DF_ASSET_PROJECT_ID=ikaos-story-2026
 ```
 
-`IKAOS_STORY_PREVIEW_URL` is optional and defaults to `http://localhost:3000`. `DF_SHEET_ACCESS_TOKEN` is currently a short-lived df-login review access token. Never commit any token.
+Both `DF_ASSET_*` values are optional overrides. Preview links use `IKAOS_STORY_API_URL` as their origin. Never commit the Story API token.
 
 ## Codex
 
 ```bash
 codex mcp add ikaos-story \
-  --env IKAOS_STORY_API_URL=https://your-ikaos-preview.vercel.app \
+  --env IKAOS_STORY_API_URL=https://ikaos-content-studio-v2026.vercel.app \
   --env IKAOS_STORY_API_TOKEN=your-project-scoped-api-token \
-  --env IKAOS_STORY_PREVIEW_URL=https://your-ikaos-preview.vercel.app \
   -- node /absolute/path/to/mcp-ikaos-story/dist/src/index.js
 ```
 
-Add the three `DF_SHEET_*` env values to the same command when image tools are needed. Verify with `codex mcp list` or `/mcp`.
+The default Asset Hub endpoint and project namespace need no extra Codex env values. Verify with `codex mcp list` or `/mcp`.
 
 ## Claude Code
 
 ```bash
 claude mcp add --transport stdio \
-  --env IKAOS_STORY_API_URL=https://your-ikaos-preview.vercel.app \
+  --env IKAOS_STORY_API_URL=https://ikaos-content-studio-v2026.vercel.app \
   --env IKAOS_STORY_API_TOKEN=your-project-scoped-api-token \
-  --env IKAOS_STORY_PREVIEW_URL=https://your-ikaos-preview.vercel.app \
   ikaos-story -- node /absolute/path/to/mcp-ikaos-story/dist/src/index.js
 ```
 
-Add the three `DF_SHEET_*` env values when image tools are needed. Verify with `claude mcp list` or `/mcp`.
+The default Asset Hub endpoint and project namespace need no extra Claude env values. Verify with `claude mcp list` or `/mcp`.
 
 ## Tools
 
@@ -70,10 +67,8 @@ Add the three `DF_SHEET_*` env values when image tools are needed. Verify with `
 | `get_story_rules` | Read fixed workflow, semantic, Quote, catalog, or producer rules through the API. |
 | `save_story_content` | Create or modify content/layout JSON with optimistic revision protection. |
 | `validate_story` | Validate the current Story identity and required content arrays. |
-| `list_story_images` | List stored images for a Story slot and optional viewport. |
 | `upload_story_image` | Upload a local PNG/JPG/WebP file, up to 20MB. |
-| `update_story_image` | Change label/order, or safely replace the file. |
-| `delete_story_image` | Permanently delete a Story image after scope verification. |
+| `update_story_image` | Replace the file using the scoped image ID returned by upload. |
 
 ## Content workflow
 
@@ -90,7 +85,7 @@ If another client saved first, fetch the latest context and merge intentionally.
 1. Choose a valid `imagePromptPackages[].inputBrief.slotId` from the Story content.
 2. Call `upload_story_image` with an absolute local image path.
 3. Use the returned `imageUrl` in the Story content and save it with `save_story_content`.
-4. Call `update_story_image` to change metadata or replace the file. Replacement uploads first and deletes the old file only after upload succeeds.
-5. Call `delete_story_image` only after confirming the image ID. Deletion removes the R2 object and cannot be recovered by this MCP.
+4. Call `update_story_image` with the returned `imageId` to replace that Asset Hub image. Keep the same file format to reuse the exact R2 key.
+5. To stop using an image, remove its URL from Story content and save the new revision. The R2 object remains until Asset Hub adds a delete API.
 
-Omit `viewport` for one responsive source. Pass the exact same viewport object to list, update, and delete when using separate mobile or desktop files.
+Omit `viewport` for one responsive source. Pass the exact same viewport object to update when using separate mobile or desktop files.

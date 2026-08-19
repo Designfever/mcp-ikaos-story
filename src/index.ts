@@ -3,12 +3,7 @@ import { McpServer } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import * as z from 'zod/v4';
 import { STORY_RULES } from './story-api.js';
-import {
-  deleteStoryImage,
-  listStoryImages,
-  updateStoryImage,
-  uploadStoryImage
-} from './image-service.js';
+import { updateStoryImage, uploadStoryImage } from './image-service.js';
 import {
   getStoryContext,
   getStoryRule,
@@ -33,40 +28,19 @@ function buildServer() {
   const server = new McpServer({ name: 'mcp-ikaos-story', version: '0.1.0' });
 
   server.registerTool(
-    'list_story_images',
-    {
-      description: 'List designer images stored for one Story image slot.',
-      inputSchema: z.object({
-        story_id: z.string().min(1),
-        slot_id: z.string().min(1),
-        viewport: viewportSchema.optional()
-      })
-    },
-    async ({ story_id, slot_id, viewport }) => {
-      try {
-        return output(await listStoryImages({ storyId: story_id, slotId: slot_id, viewport }));
-      } catch (error) {
-        return failure(error);
-      }
-    }
-  );
-
-  server.registerTool(
     'upload_story_image',
     {
-      description: 'Upload a local PNG, JPG, JPEG, or WebP file to one Story image slot. df-sheet stores it as WebP.',
+      description: 'Upload a local PNG, JPG, JPEG, or WebP file to Asset Hub after verifying the Story image slot.',
       inputSchema: z.object({
         story_id: z.string().min(1),
         slot_id: z.string().min(1),
         image_path: z.string().min(1),
-        viewport: viewportSchema.optional(),
-        label: z.string().optional(),
-        order: z.number().finite().optional()
+        viewport: viewportSchema.optional()
       })
     },
-    async ({ story_id, slot_id, image_path, viewport, label, order }) => {
+    async ({ story_id, slot_id, image_path, viewport }) => {
       try {
-        return output(await uploadStoryImage({ storyId: story_id, slotId: slot_id, imagePath: image_path, viewport, label, order }));
+        return output(await uploadStoryImage({ storyId: story_id, slotId: slot_id, imagePath: image_path, viewport }));
       } catch (error) {
         return failure(error);
       }
@@ -76,40 +50,18 @@ function buildServer() {
   server.registerTool(
     'update_story_image',
     {
-      description: 'Update image label/order or safely replace its file after verifying Story and slot ownership.',
+      description: 'Replace an Asset Hub image file using the scoped image ID returned by upload_story_image.',
       inputSchema: z.object({
         story_id: z.string().min(1),
         slot_id: z.string().min(1),
         image_id: z.string().min(1),
         viewport: viewportSchema.optional(),
-        image_path: z.string().min(1).optional(),
-        label: z.string().nullable().optional(),
-        order: z.number().finite().optional()
+        image_path: z.string().min(1)
       })
     },
-    async ({ story_id, slot_id, image_id, viewport, image_path, label, order }) => {
+    async ({ story_id, slot_id, image_id, viewport, image_path }) => {
       try {
-        return output(await updateStoryImage({ storyId: story_id, slotId: slot_id, imageId: image_id, viewport, imagePath: image_path, label, order }));
-      } catch (error) {
-        return failure(error);
-      }
-    }
-  );
-
-  server.registerTool(
-    'delete_story_image',
-    {
-      description: 'Permanently delete one image after verifying Story and slot ownership.',
-      inputSchema: z.object({
-        story_id: z.string().min(1),
-        slot_id: z.string().min(1),
-        image_id: z.string().min(1),
-        viewport: viewportSchema.optional()
-      })
-    },
-    async ({ story_id, slot_id, image_id, viewport }) => {
-      try {
-        return output(await deleteStoryImage({ storyId: story_id, slotId: slot_id, imageId: image_id, viewport }));
+        return output(await updateStoryImage({ storyId: story_id, slotId: slot_id, imageId: image_id, viewport, imagePath: image_path }));
       } catch (error) {
         return failure(error);
       }

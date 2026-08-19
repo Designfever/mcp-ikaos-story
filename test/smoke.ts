@@ -16,11 +16,9 @@ try {
   const listed = await client.listTools();
   const names = listed.tools.map((tool) => tool.name).sort();
   const expected = [
-    'delete_story_image',
     'get_story_context',
     'get_story_rules',
     'list_stories',
-    'list_story_images',
     'save_story_content',
     'update_story_image',
     'upload_story_image',

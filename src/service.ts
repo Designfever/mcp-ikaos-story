@@ -3,7 +3,7 @@ import type { JsonObject } from './types.js';
 
 function previewUrl(route: string | null): string | null {
   if (!route) return null;
-  const origin = (process.env.IKAOS_STORY_PREVIEW_URL || 'http://localhost:3000').replace(/\/+$/, '');
+  const origin = (process.env.IKAOS_STORY_API_URL || 'http://localhost:3000').replace(/\/+$/, '');
   return `${origin}${route.startsWith('/') ? route : `/${route}`}`;
 }
 

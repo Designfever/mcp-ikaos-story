@@ -3,14 +3,12 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import {
-  deleteStoryImage,
-  listStoryImages,
-  updateStoryImage,
-  uploadStoryImage
-} from '../src/image-service.js';
+import { updateStoryImage, uploadStoryImage } from '../src/image-service.js';
 
-const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64'
+);
 
 async function fixture() {
   const root = path.join(os.tmpdir(), `mcp-ikaos-image-${crypto.randomUUID()}`);
@@ -23,9 +21,8 @@ async function fixture() {
 const environment = {
   IKAOS_STORY_API_URL: 'https://story.test',
   IKAOS_STORY_API_TOKEN: 'story-secret',
-  DF_SHEET_URL: 'https://df-sheet.test',
-  DF_SHEET_PROJECT_ID: 'project-1',
-  DF_SHEET_ACCESS_TOKEN: 'image-secret'
+  DF_ASSET_UPLOAD_URL: 'https://assets.test/api/review/figma-images/upload',
+  DF_ASSET_PROJECT_ID: 'ikaos-test'
 };
 
 function storyContext() {
@@ -40,83 +37,97 @@ function storyContext() {
   };
 }
 
-function success(data: unknown, status = 200) {
-  return new Response(JSON.stringify({ success: true, data }), {
-    status,
+function storySuccess() {
+  return new Response(JSON.stringify({ success: true, data: storyContext() }), {
+    status: 200,
     headers: { 'Content-Type': 'application/json' }
   });
 }
 
-test('lists a valid Story slot with project-scoped authorization', async () => {
-  let imageRequest: { url: string; init?: RequestInit } | undefined;
-  const fetchImpl = async (input: string | URL | Request, init?: RequestInit) => {
-    const url = String(input);
-    if (url.startsWith('https://story.test')) return success(storyContext());
-    imageRequest = { url, init };
-    return success([]);
-  };
-  const result = await listStoryImages(
-    { storyId: 'p-1-A', slotId: 'basic-image-01' },
-    { env: environment, fetchImpl }
-  );
-  assert.equal(result.storyId, 'P-1-a');
-  assert.deepEqual(result.images, []);
-  assert.equal(
-    imageRequest?.init?.headers && (imageRequest.init.headers as Record<string, string>).Authorization,
-    'Bearer image-secret'
-  );
-  const target = JSON.parse(new URL(imageRequest?.url || '').searchParams.get('target') || '{}');
-  assert.deepEqual(target, {
-    type: 'route', projectId: 'project-1', pageUrl: '/story/catalog/p-1-a', slot: 'basic-image-01'
-  });
-});
+function assetSuccess(imageId: string) {
+  const storageKey = `ikaos-test/figma-images/${imageId}.png`;
+  return new Response(JSON.stringify({
+    r2Key: storageKey,
+    storageKey,
+    publicUrl: `https://assets.test/${storageKey}`,
+    imageUrl: `https://assets.test/${storageKey}`,
+    imageId,
+    contentType: 'image/png',
+    imageFormat: 'png',
+    byteSize: PNG.byteLength
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+}
 
-test('uploads a local image as a data URL', async (t) => {
+test('uploads a scoped local image directly to Asset Hub', async (t) => {
   const local = await fixture();
   t.after(() => rm(local.root, { recursive: true, force: true }));
-  let body: Record<string, unknown> = {};
+  let assetRequest: { url: string; init?: RequestInit } | undefined;
   const fetchImpl = async (input: string | URL | Request, init?: RequestInit) => {
-    if (String(input).startsWith('https://story.test')) return success(storyContext());
-    body = JSON.parse(String(init?.body));
-    return success({ id: 'figma-new', target: body.target, imageUrl: 'https://assets.test/new.webp', order: 0 }, 201);
+    if (String(input).startsWith('https://story.test')) return storySuccess();
+    assetRequest = { url: String(input), init };
+    return assetSuccess(new URL(String(input)).searchParams.get('imageId') || '');
   };
   const result = await uploadStoryImage(
-    { storyId: 'P-1-a', slotId: 'basic-image-01', imagePath: local.imagePath, label: 'Hero' },
+    { storyId: 'p-1-A', slotId: 'basic-image-01', imagePath: local.imagePath },
     { env: environment, fetchImpl }
   );
-  assert.equal(result.image.id, 'figma-new');
-  assert.equal(body.label, 'Hero');
-  assert.match((body.asset as { dataUrl: string }).dataUrl, /^data:image\/png;base64,/);
+  const url = new URL(assetRequest?.url || '');
+  assert.equal(result.storyId, 'P-1-a');
+  assert.equal(url.searchParams.get('projectId'), 'ikaos-test');
+  assert.match(result.image.imageId, /^p-1-a--basic-image-01--shared--[0-9a-f-]{36}$/);
+  assert.equal((assetRequest?.init?.headers as Record<string, string>)['Content-Type'], 'image/png');
+  assert.deepEqual(Buffer.from(assetRequest?.init?.body as Uint8Array), PNG);
 });
 
-test('replaces only after upload succeeds, then deletes the original', async (t) => {
+test('replaces an owned image by uploading to the same image ID', async (t) => {
   const local = await fixture();
   t.after(() => rm(local.root, { recursive: true, force: true }));
-  const imageMethods: string[] = [];
-  const fetchImpl = async (input: string | URL | Request, init?: RequestInit) => {
-    if (String(input).startsWith('https://story.test')) return success(storyContext());
-    const method = init?.method || 'GET';
-    imageMethods.push(method);
-    if (method === 'GET') return success([{ id: 'old', imageUrl: 'old.webp', label: 'Old', order: 3 }]);
-    if (method === 'POST') return success({ id: 'new', imageUrl: 'new.webp', label: 'Old', order: 3 }, 201);
-    return success({ id: 'old' });
+  const imageId = 'p-1-a--basic-image-01--shared--123e4567-e89b-12d3-a456-426614174000';
+  let uploadedId = '';
+  const fetchImpl = async (input: string | URL | Request) => {
+    if (String(input).startsWith('https://story.test')) return storySuccess();
+    uploadedId = new URL(String(input)).searchParams.get('imageId') || '';
+    return assetSuccess(uploadedId);
   };
   const result = await updateStoryImage(
-    { storyId: 'P-1-a', slotId: 'basic-image-01', imageId: 'old', imagePath: local.imagePath },
+    { storyId: 'P-1-a', slotId: 'basic-image-01', imageId, imagePath: local.imagePath },
     { env: environment, fetchImpl }
   );
-  assert.deepEqual(imageMethods, ['GET', 'POST', 'DELETE']);
+  assert.equal(uploadedId, imageId);
   assert.equal(result.replaced, true);
+  assert.equal(result.image.imageId, imageId);
 });
 
-test('refuses deletion when the image is outside the requested Story slot', async () => {
+test('refuses to replace an image outside the requested Story slot', async (t) => {
+  const local = await fixture();
+  t.after(() => rm(local.root, { recursive: true, force: true }));
   const fetchImpl = async (input: string | URL | Request) =>
-    String(input).startsWith('https://story.test') ? success(storyContext()) : success([]);
+    String(input).startsWith('https://story.test')
+      ? storySuccess()
+      : assetSuccess('another-story--basic-image-01--shared--id');
   await assert.rejects(
-    () => deleteStoryImage(
-      { storyId: 'P-1-a', slotId: 'basic-image-01', imageId: 'another-story-image' },
+    () => updateStoryImage(
+      {
+        storyId: 'P-1-a',
+        slotId: 'basic-image-01',
+        imageId: 'another-story--basic-image-01--shared--id',
+        imagePath: local.imagePath
+      },
       { env: environment, fetchImpl }
     ),
     /does not belong/
+  );
+});
+
+test('refuses an unknown Story image slot before upload', async (t) => {
+  const local = await fixture();
+  t.after(() => rm(local.root, { recursive: true, force: true }));
+  const fetchImpl = async () => storySuccess();
+  await assert.rejects(
+    () => uploadStoryImage(
+      { storyId: 'P-1-a', slotId: 'missing-slot', imagePath: local.imagePath },
+      { env: environment, fetchImpl }
+    ),
+    /Unknown image slot/
   );
 });
