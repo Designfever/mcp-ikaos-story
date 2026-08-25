@@ -37,7 +37,7 @@ test('sends optimistic revision when saving Story content', async () => {
   };
   await new StoryApiClient({ env, fetchImpl }).updateStory(
     'P-1-a',
-    { receipt: { storyId: 'P-1-a' }, articleBlocks: [], imagePromptPackages: [] },
+    { receipt: { storyId: 'P-1-a' }, articleBlocks: [], imageSlots: [] },
     'a'.repeat(64)
   );
   assert.equal(body.expectedRevision, 'a'.repeat(64));

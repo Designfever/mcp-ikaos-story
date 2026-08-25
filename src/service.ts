@@ -7,7 +7,7 @@ function previewUrl(route: string | null): string | null {
   return `${origin}${route.startsWith('/') ? route : `/${route}`}`;
 }
 
-function validateContent(storyId: string, content: JsonObject) {
+export function validateContent(storyId: string, content: JsonObject) {
   const errors: string[] = [];
   const receipt = content.receipt;
   if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt)) {
@@ -16,8 +16,8 @@ function validateContent(storyId: string, content: JsonObject) {
     errors.push('content.receipt.storyId must match the Story ID');
   }
   if (!Array.isArray(content.articleBlocks)) errors.push('content.articleBlocks must be an array');
-  if (!Array.isArray(content.imagePromptPackages)) {
-    errors.push('content.imagePromptPackages must be an array');
+  if (!Array.isArray(content.imageSlots)) {
+    errors.push('content.imageSlots must be an array');
   }
   return errors;
 }

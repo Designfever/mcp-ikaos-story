@@ -32,7 +32,7 @@ function storyContext() {
     currentData: {
       revision: 'a'.repeat(64),
       updatedAt: null,
-      data: { imagePromptPackages: [{ inputBrief: { slotId: 'basic-image-01' } }] }
+      data: { imageSlots: [{ slotId: 'basic-image-01' }] }
     }
   };
 }

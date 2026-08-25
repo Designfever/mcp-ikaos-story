@@ -74,7 +74,7 @@ The default Asset Hub endpoint and project namespace need no extra Claude env va
 
 1. Call `get_story_context`.
 2. Open `docsLink` and read the required fixed rules with `get_story_rules`.
-3. Modify only the returned `currentData.data` content/layout object.
+3. Modify only the returned `currentData.data` content/layout object. Read-only fields may be omitted, but any supplied values must remain unchanged.
 4. Call `save_story_content` with the unchanged Story ID and `currentData.revision`. Use `null` only when the Story has no content yet.
 5. Call `validate_story`, then check the returned preview URL at 390px and 1280px.
 
@@ -82,7 +82,7 @@ If another client saved first, fetch the latest context and merge intentionally.
 
 ## Image workflow
 
-1. Choose a valid `imagePromptPackages[].inputBrief.slotId` from the Story content.
+1. Choose a valid `imageSlots[].slotId` from the Story content.
 2. Call `upload_story_image` with an absolute local image path.
 3. Use the returned `imageUrl` in the Story content and save it with `save_story_content`.
 4. Call `update_story_image` with the returned `imageId` to replace that Asset Hub image. Keep the same file format to reuse the exact R2 key.
