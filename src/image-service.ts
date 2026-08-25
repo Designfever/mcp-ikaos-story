@@ -61,13 +61,11 @@ function normalizeViewport(viewport?: StoryImageViewport): StoryImageViewport | 
 
 function imageSlots(data: unknown): string[] {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return [];
-  const packages = (data as Record<string, unknown>).imagePromptPackages;
-  if (!Array.isArray(packages)) return [];
-  return [...new Set(packages.flatMap((entry) => {
+  const slots = (data as Record<string, unknown>).imageSlots;
+  if (!Array.isArray(slots)) return [];
+  return [...new Set(slots.flatMap((entry) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
-    const inputBrief = (entry as Record<string, unknown>).inputBrief;
-    if (!inputBrief || typeof inputBrief !== 'object' || Array.isArray(inputBrief)) return [];
-    const slotId = (inputBrief as Record<string, unknown>).slotId;
+    const slotId = (entry as Record<string, unknown>).slotId;
     return typeof slotId === 'string' && slotId.trim() ? [slotId.trim()] : [];
   }))];
 }

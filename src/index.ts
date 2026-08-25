@@ -116,7 +116,7 @@ function buildServer() {
   server.registerTool(
     'save_story_content',
     {
-      description: 'Create or modify Story content/layout JSON with optimistic revision protection. Fixed docs and source metadata cannot be changed.',
+      description: 'Create or modify Story content/layout JSON with optimistic revision protection. Omitted read-only fields are preserved by the API; supplied read-only values cannot be changed.',
       inputSchema: z.object({
         story_id: z.string().min(1),
         content: z.record(z.string(), z.unknown()),
