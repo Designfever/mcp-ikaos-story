@@ -9,6 +9,7 @@ import {
   getStoryRule,
   listStorySummaries,
   saveStoryContent,
+  startStoryProduction,
   validateStory
 } from './service.js';
 
@@ -107,6 +108,24 @@ function buildServer() {
     async ({ rule }) => {
       try {
         return output(await getStoryRule(rule));
+      } catch (error) {
+        return failure(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    'start_story',
+    {
+      description: 'Start or refresh Story production after the user confirms its type. The API locks the authoritative DOCX checksum and refuses completed Stories.',
+      inputSchema: z.object({
+        story_id: z.string().min(1),
+        type: z.enum(['basic', 'immersive', 'narrative'])
+      })
+    },
+    async ({ story_id, type }) => {
+      try {
+        return output(await startStoryProduction(story_id, type));
       } catch (error) {
         return failure(error);
       }

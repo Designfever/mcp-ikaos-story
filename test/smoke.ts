@@ -20,6 +20,7 @@ try {
     'get_story_rules',
     'list_stories',
     'save_story_content',
+    'start_story',
     'update_story_image',
     'upload_story_image',
     'validate_story'

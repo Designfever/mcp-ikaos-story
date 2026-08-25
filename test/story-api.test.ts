@@ -29,6 +29,18 @@ test('lists Stories through the authenticated Story API', async () => {
   );
 });
 
+test('starts Story production through the authenticated API', async () => {
+  let request: { url: string; init?: RequestInit } | undefined;
+  const fetchImpl = async (input: string | URL | Request, init?: RequestInit) => {
+    request = { url: String(input), init };
+    return json({ success: true, data: { id: '6-5-a', productionStatus: 'in_progress' } });
+  };
+  await new StoryApiClient({ env, fetchImpl }).startStory('6-5-a', 'immersive');
+  assert.equal(request?.url, 'https://story.test/api/mcp/stories/6-5-a/start');
+  assert.equal(request?.init?.method, 'POST');
+  assert.deepEqual(JSON.parse(String(request?.init?.body)), { type: 'immersive' });
+});
+
 test('sends optimistic revision when saving Story content', async () => {
   let body: Record<string, unknown> = {};
   const fetchImpl = async (_input: string | URL | Request, init?: RequestInit) => {

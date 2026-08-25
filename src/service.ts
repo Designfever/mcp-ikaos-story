@@ -1,4 +1,8 @@
-import { StoryApiClient, type StoryRuleName } from './story-api.js';
+import {
+  StoryApiClient,
+  type StoryProductionType,
+  type StoryRuleName
+} from './story-api.js';
 import type { JsonObject } from './types.js';
 
 function previewUrl(route: string | null): string | null {
@@ -42,6 +46,20 @@ export async function getStoryContext(storyId: string) {
 
 export async function getStoryRule(name: StoryRuleName) {
   return new StoryApiClient().getRule(name);
+}
+
+export async function startStoryProduction(storyId: string, storyType: StoryProductionType) {
+  const context = await new StoryApiClient().startStory(storyId, storyType);
+  return {
+    storyId: context.id,
+    type: context.type,
+    productionStatus: context.productionStatus,
+    productionStage: context.productionStage,
+    route: context.route,
+    sourceDocumentSha256: context.authoritativeDocument.sha256,
+    previewUrl: previewUrl(context.route),
+    docsLink: context.authoritativeDocument.url
+  };
 }
 
 export async function saveStoryContent(input: {
