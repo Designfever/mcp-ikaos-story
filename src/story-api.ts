@@ -13,6 +13,7 @@ export const STORY_RULES = {
 } as const;
 
 export type StoryRuleName = keyof typeof STORY_RULES;
+export type StoryProductionType = 'basic' | 'immersive' | 'narrative';
 
 export type StorySummary = {
   id: string;
@@ -21,6 +22,7 @@ export type StorySummary = {
   type: string | null;
   templateId: string | null;
   productionStatus: string;
+  productionStage: string;
   route: string | null;
   division: string;
   sheetRow: number;
@@ -111,6 +113,16 @@ export class StoryApiClient {
   getRule(rule: StoryRuleName) {
     return this.request<{ rule: StoryRuleName; path: string; content: string }>(
       `/api/mcp/rules/${encodeURIComponent(rule)}`
+    );
+  }
+
+  startStory(storyId: string, storyType: StoryProductionType) {
+    return this.request<StoryApiContext>(
+      `/api/mcp/stories/${encodeURIComponent(storyId)}/start`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ type: storyType })
+      }
     );
   }
 

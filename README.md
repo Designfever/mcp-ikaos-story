@@ -7,7 +7,8 @@ The MCP talks to the authenticated iKAOS Story API. Users do not need to clone `
 ## Boundaries
 
 - `get_story_context` returns the current content revision and authoritative `docsLink`.
-- `save_story_content` writes only `content_data`; source, docs, Story identity, and production metadata cannot be changed.
+- `start_story` may update only the confirmed type, source receipt, and start status through the authenticated API; completed Stories are protected.
+- `save_story_content` writes only `content_data`; source, docs, Story identity, and other production metadata cannot be changed.
 - Every content write requires the exact current revision. A stale edit returns a conflict instead of overwriting newer content.
 - Image generation is out of scope. Designers can upload and replace supplied image files through DF Asset Hub.
 - Asset Hub does not currently expose list or delete APIs. Removing an image URL from Story content does not remove its R2 object.
@@ -65,6 +66,7 @@ The default Asset Hub endpoint and project namespace need no extra Claude env va
 | `list_stories` | List Supabase-backed Story status, content revision, preview route, and docs link. |
 | `get_story_context` | Read identity, authoritative document link, current content JSON, and revision. |
 | `get_story_rules` | Read fixed workflow, semantic, Quote, catalog, or producer rules through the API. |
+| `start_story` | Start or refresh production after the user confirms the Story type; locks the authoritative DOCX checksum. |
 | `save_story_content` | Create or modify content/layout JSON with optimistic revision protection. |
 | `validate_story` | Validate the current Story identity and required content arrays. |
 | `upload_story_image` | Upload a local PNG/JPG/WebP file, up to 20MB. |
@@ -74,9 +76,10 @@ The default Asset Hub endpoint and project namespace need no extra Claude env va
 
 1. Call `get_story_context`.
 2. Open `docsLink` and read the required fixed rules with `get_story_rules`.
-3. Modify only the returned `currentData.data` content/layout object. Read-only fields may be omitted, but any supplied values must remain unchanged.
-4. Call `save_story_content` with the unchanged Story ID and `currentData.revision`. Use `null` only when the Story has no content yet.
-5. Call `validate_story`, then check the returned preview URL at 390px and 1280px.
+3. After the user confirms `basic`, `immersive`, or `narrative`, call `start_story`. Do not request a local Content Studio checkout.
+4. Modify only the returned `currentData.data` content/layout object. Read-only fields may be omitted, but any supplied values must remain unchanged.
+5. Call `save_story_content` with the unchanged Story ID and the latest `currentData.revision`. Use `null` only when the Story has no content yet.
+6. Call `validate_story`, then check the returned preview URL at 390px and 1280px.
 
 If another client saved first, fetch the latest context and merge intentionally. Do not retry with a replaced revision without reviewing the newer content.
 
