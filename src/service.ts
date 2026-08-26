@@ -48,11 +48,16 @@ export async function getStoryRule(name: StoryRuleName) {
   return new StoryApiClient().getRule(name);
 }
 
-export async function startStoryProduction(storyId: string, storyType: StoryProductionType) {
-  const context = await new StoryApiClient().startStory(storyId, storyType);
+export async function startStoryProduction(
+  storyId: string,
+  storyType: StoryProductionType,
+  templateId: string
+) {
+  const context = await new StoryApiClient().startStory(storyId, storyType, templateId);
   return {
     storyId: context.id,
     type: context.type,
+    templateId: context.templateId,
     productionStatus: context.productionStatus,
     productionStage: context.productionStage,
     route: context.route,

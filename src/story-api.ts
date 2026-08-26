@@ -116,12 +116,12 @@ export class StoryApiClient {
     );
   }
 
-  startStory(storyId: string, storyType: StoryProductionType) {
+  startStory(storyId: string, storyType: StoryProductionType, templateId: string) {
     return this.request<StoryApiContext>(
       `/api/mcp/stories/${encodeURIComponent(storyId)}/start`,
       {
         method: 'POST',
-        body: JSON.stringify({ type: storyType })
+        body: JSON.stringify({ type: storyType, template_id: templateId })
       }
     );
   }

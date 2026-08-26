@@ -117,15 +117,16 @@ function buildServer() {
   server.registerTool(
     'start_story',
     {
-      description: 'Start or refresh Story production after the user confirms its type. The API locks the authoritative DOCX checksum and refuses completed Stories.',
+      description: 'Start or refresh Story production after the user confirms its type and compatible template. The API locks the authoritative DOCX checksum and refuses completed Stories.',
       inputSchema: z.object({
         story_id: z.string().min(1),
-        type: z.enum(['basic', 'immersive', 'narrative'])
+        type: z.enum(['basic', 'immersive', 'narrative']),
+        template_id: z.string().min(1)
       })
     },
-    async ({ story_id, type }) => {
+    async ({ story_id, type, template_id }) => {
       try {
-        return output(await startStoryProduction(story_id, type));
+        return output(await startStoryProduction(story_id, type, template_id));
       } catch (error) {
         return failure(error);
       }

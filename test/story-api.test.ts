@@ -35,10 +35,13 @@ test('starts Story production through the authenticated API', async () => {
     request = { url: String(input), init };
     return json({ success: true, data: { id: '6-5-a', productionStatus: 'in_progress' } });
   };
-  await new StoryApiClient({ env, fetchImpl }).startStory('6-5-a', 'immersive');
+  await new StoryApiClient({ env, fetchImpl }).startStory('6-5-a', 'immersive', 'I-05');
   assert.equal(request?.url, 'https://story.test/api/mcp/stories/6-5-a/start');
   assert.equal(request?.init?.method, 'POST');
-  assert.deepEqual(JSON.parse(String(request?.init?.body)), { type: 'immersive' });
+  assert.deepEqual(JSON.parse(String(request?.init?.body)), {
+    type: 'immersive',
+    template_id: 'I-05'
+  });
 });
 
 test('sends optimistic revision when saving Story content', async () => {
