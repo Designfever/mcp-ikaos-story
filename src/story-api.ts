@@ -24,6 +24,7 @@ export type StorySummary = {
   productionStatus: string;
   productionStage: string;
   route: string | null;
+  productionRoute: string | null;
   division: string;
   sheetRow: number;
   chapter: string;
@@ -49,6 +50,25 @@ export type StoryApiContext = StorySummary & {
   };
   currentData: { revision: string | null; updatedAt: string | null; data: JsonObject } | null;
   protectedFields: string[];
+};
+
+export type StoryResetPreview = {
+  storyId: string;
+  title: string;
+  protected: boolean;
+  protectionReasons: string[];
+  requiredConfirmation: string;
+  preserved: string[];
+  cleared: string[];
+  current: Record<string, unknown>;
+  result: Record<string, unknown>;
+  previewToken: string;
+  expiresAt: string;
+};
+
+export type StoryResetResult = {
+  story: StoryApiContext;
+  archiveId: string | null;
 };
 
 export type StoryApiOptions = {
@@ -131,5 +151,26 @@ export class StoryApiClient {
       method: 'PATCH',
       body: JSON.stringify({ content, expectedRevision })
     });
+  }
+
+  resetStoryPreview(storyId: string) {
+    return this.request<StoryResetPreview>(
+      `/api/mcp/stories/${encodeURIComponent(storyId)}/reset`,
+      { method: 'POST', body: JSON.stringify({ mode: 'preview' }) }
+    );
+  }
+
+  resetStoryConfirm(storyId: string, previewToken: string, confirmation?: string) {
+    return this.request<StoryResetResult>(
+      `/api/mcp/stories/${encodeURIComponent(storyId)}/reset`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          mode: 'confirm',
+          previewToken,
+          ...(confirmation ? { confirmation } : {})
+        })
+      }
+    );
   }
 }

@@ -19,6 +19,7 @@ try {
     'get_story_context',
     'get_story_rules',
     'list_stories',
+    'reset_story',
     'save_story_content',
     'start_story',
     'update_story_image',

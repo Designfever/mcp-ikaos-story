@@ -5,9 +5,11 @@ import * as z from 'zod/v4';
 import { STORY_RULES } from './story-api.js';
 import { updateStoryImage, uploadStoryImage } from './image-service.js';
 import {
+  confirmStoryReset,
   getStoryContext,
   getStoryRule,
   listStorySummaries,
+  previewStoryReset,
   saveStoryContent,
   startStoryProduction,
   validateStory
@@ -127,6 +129,34 @@ function buildServer() {
     async ({ story_id, type, template_id }) => {
       try {
         return output(await startStoryProduction(story_id, type, template_id));
+      } catch (error) {
+        return failure(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    'reset_story',
+    {
+      description: 'Preview or confirm an atomic Story production reset. Preview first. Confirm archives the full production row, preserves Sheet/DOCX identity, and clears generated type, template, content, images, route, and revision. Sheet-classified, completed, or deployed Stories also require the exact confirmation string returned by preview.',
+      inputSchema: z.object({
+        story_id: z.string().min(1),
+        mode: z.enum(['preview', 'confirm']),
+        preview_token: z.string().min(1).optional(),
+        confirmation: z.string().min(1).optional()
+      })
+    },
+    async ({ story_id, mode, preview_token, confirmation }) => {
+      try {
+        if (mode === 'preview') return output(await previewStoryReset(story_id));
+        if (!preview_token) throw new Error('preview_token is required for confirm');
+        return output(
+          await confirmStoryReset({
+            storyId: story_id,
+            previewToken: preview_token,
+            confirmation
+          })
+        );
       } catch (error) {
         return failure(error);
       }

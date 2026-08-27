@@ -9,7 +9,9 @@ The MCP talks to the authenticated iKAOS Story API. Users do not need to clone `
 - `get_story_context` returns the current content revision and authoritative `docsLink`.
 - `start_story` updates the confirmed type, compatible template, source receipt, and start status through the authenticated API; completed Stories are protected.
 - `save_story_content` writes only `content_data`; source, docs, Story identity, and other production metadata cannot be changed.
-- Every content write requires the exact current revision. A stale edit returns a conflict instead of overwriting newer content.
+- `reset_story` always requires a preview token. Confirm archives the complete production row atomically, preserves Story/Sheet/DOCX identity, and clears generated type, template, content, images, route, and revision.
+- A Story whose Sheet type/template is set, or whose production is completed/deployed, also requires the exact `RESET <story_id>` confirmation returned by preview.
+- Every content write and reset confirmation is revision-protected. A stale operation returns a conflict instead of overwriting newer content.
 - Image generation is out of scope. Designers can upload and replace supplied image files through DF Asset Hub.
 - Asset Hub does not currently expose list or delete APIs. Removing an image URL from Story content does not remove its R2 object.
 - No Supabase service key is distributed to MCP users.
@@ -67,6 +69,7 @@ The default Asset Hub endpoint and project namespace need no extra Claude env va
 | `get_story_context` | Read identity, authoritative document link, current content JSON, and revision. |
 | `get_story_rules` | Read fixed workflow, semantic, Quote, catalog, or producer rules through the API. |
 | `start_story` | Start or refresh production after the user confirms a compatible Story type/template pair; locks the authoritative DOCX checksum. |
+| `reset_story` | Preview or confirm an archived, revision-protected reset to `제작 전`; protected Stories require the returned exact confirmation string. |
 | `save_story_content` | Create or modify content/layout JSON with optimistic revision protection. |
 | `validate_story` | Validate the current Story identity and required content arrays. |
 | `upload_story_image` | Upload a local PNG/JPG/WebP file, up to 20MB. |
@@ -82,6 +85,16 @@ The default Asset Hub endpoint and project namespace need no extra Claude env va
 6. Call `validate_story`, then check the returned preview URL at 390px and 1280px.
 
 If another client saved first, fetch the latest context and merge intentionally. Do not retry with a replaced revision without reviewing the newer content.
+
+## Reset workflow
+
+1. Call `reset_story` with `mode: "preview"` and the Story ID.
+2. Review `current`, `preserved`, `cleared`, `protectionReasons`, and `result`.
+3. Call `reset_story` again with `mode: "confirm"` and the unexpired `preview_token`.
+4. If `protected` is true, also pass the exact `requiredConfirmation` string as `confirmation`.
+5. A changed revision or production state invalidates the token. Preview again; never bypass the conflict.
+
+Confirm creates an immutable archive before clearing generated fields in the same database transaction. It does not modify the Sheet or authoritative DOCX receipt and does not delete Asset Hub files.
 
 ## Image workflow
 

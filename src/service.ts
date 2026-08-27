@@ -88,6 +88,34 @@ export async function saveStoryContent(input: {
   };
 }
 
+export async function previewStoryReset(storyId: string) {
+  return new StoryApiClient().resetStoryPreview(storyId);
+}
+
+export async function confirmStoryReset(input: {
+  storyId: string;
+  previewToken: string;
+  confirmation?: string;
+}) {
+  const result = await new StoryApiClient().resetStoryConfirm(
+    input.storyId,
+    input.previewToken,
+    input.confirmation
+  );
+  return {
+    storyId: result.story.id,
+    archiveId: result.archiveId,
+    productionStatus: result.story.productionStatus,
+    productionStage: result.story.productionStage,
+    type: result.story.type,
+    templateId: result.story.templateId,
+    revision: result.story.currentData?.revision ?? null,
+    hasContent: Boolean(result.story.currentData),
+    previewUrl: previewUrl(result.story.productionRoute),
+    docsLink: result.story.authoritativeDocument.url
+  };
+}
+
 export async function validateStory(storyId: string) {
   const context = await new StoryApiClient().getStory(storyId);
   if (!context.currentData) throw new Error(`No Story content exists for ${context.id}`);

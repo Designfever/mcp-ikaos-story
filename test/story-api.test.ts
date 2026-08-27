@@ -44,6 +44,31 @@ test('starts Story production through the authenticated API', async () => {
   });
 });
 
+test('previews and confirms Story reset through the authenticated API', async () => {
+  const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
+  const fetchImpl = async (input: string | URL | Request, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    requests.push({ url: String(input), body });
+    return body.mode === 'preview'
+      ? json({ success: true, data: { storyId: '6-6-a', previewToken: 'signed-token' } })
+      : json({
+          success: true,
+          data: { story: { id: '6-6-a', productionStatus: 'not_started' }, archiveId: 'archive-1' }
+        });
+  };
+  const client = new StoryApiClient({ env, fetchImpl });
+  await client.resetStoryPreview('6-6-a');
+  await client.resetStoryConfirm('6-6-a', 'signed-token', 'RESET 6-6-a');
+
+  assert.equal(requests[0]?.url, 'https://story.test/api/mcp/stories/6-6-a/reset');
+  assert.deepEqual(requests[0]?.body, { mode: 'preview' });
+  assert.deepEqual(requests[1]?.body, {
+    mode: 'confirm',
+    previewToken: 'signed-token',
+    confirmation: 'RESET 6-6-a'
+  });
+});
+
 test('sends optimistic revision when saving Story content', async () => {
   let body: Record<string, unknown> = {};
   const fetchImpl = async (_input: string | URL | Request, init?: RequestInit) => {
