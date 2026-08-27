@@ -44,6 +44,32 @@ test('starts Story production through the authenticated API', async () => {
   });
 });
 
+test('previews and confirms a typed Story status-only update', async () => {
+  const bodies: Record<string, unknown>[] = [];
+  const fetchImpl = async (_input: string | URL | Request, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    bodies.push(body);
+    return json({
+      success: true,
+      data: { status: 'awaiting_review', selection: 'typed', storyIds: ['P-1-a'], total: 1 }
+    });
+  };
+  const client = new StoryApiClient({ env, fetchImpl });
+  await client.previewTypedStoryStatusUpdate();
+  await client.confirmTypedStoryStatusUpdate(['P-1-a']);
+  assert.deepEqual(bodies[0], {
+    mode: 'preview',
+    status: 'awaiting_review',
+    selection: 'typed'
+  });
+  assert.deepEqual(bodies[1], {
+    mode: 'confirm',
+    status: 'awaiting_review',
+    selection: 'typed',
+    expectedStoryIds: ['P-1-a']
+  });
+});
+
 test('previews and confirms Story reset through the authenticated API', async () => {
   const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
   const fetchImpl = async (input: string | URL | Request, init?: RequestInit) => {

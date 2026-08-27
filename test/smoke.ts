@@ -16,6 +16,7 @@ try {
   const listed = await client.listTools();
   const names = listed.tools.map((tool) => tool.name).sort();
   const expected = [
+    'bulk_update_story_status',
     'get_story_context',
     'get_story_rules',
     'list_stories',

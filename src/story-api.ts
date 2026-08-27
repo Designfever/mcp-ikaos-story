@@ -71,6 +71,17 @@ export type StoryResetResult = {
   archiveId: string | null;
 };
 
+export type StoryBulkStatusResult = {
+  status: 'awaiting_review';
+  selection: 'typed';
+  storyIds: string[];
+  total: number;
+  alreadyMatching: number;
+  changes: string[];
+  preserved: string[];
+  updated?: number;
+};
+
 export type StoryApiOptions = {
   env?: NodeJS.ProcessEnv;
   fetchImpl?: typeof fetch;
@@ -150,6 +161,29 @@ export class StoryApiClient {
     return this.request<StoryApiContext>(`/api/mcp/stories/${encodeURIComponent(storyId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ content, expectedRevision })
+    });
+  }
+
+  previewTypedStoryStatusUpdate() {
+    return this.request<StoryBulkStatusResult>('/api/mcp/stories/status', {
+      method: 'POST',
+      body: JSON.stringify({
+        mode: 'preview',
+        status: 'awaiting_review',
+        selection: 'typed'
+      })
+    });
+  }
+
+  confirmTypedStoryStatusUpdate(expectedStoryIds: string[]) {
+    return this.request<StoryBulkStatusResult>('/api/mcp/stories/status', {
+      method: 'POST',
+      body: JSON.stringify({
+        mode: 'confirm',
+        status: 'awaiting_review',
+        selection: 'typed',
+        expectedStoryIds
+      })
     });
   }
 

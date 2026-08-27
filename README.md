@@ -9,6 +9,7 @@ The MCP talks to the authenticated iKAOS Story API. Users do not need to clone `
 - `get_story_context` returns the current content revision and authoritative `docsLink`.
 - `start_story` updates the confirmed type, compatible template, source receipt, and start status through the authenticated API; completed Stories are protected.
 - `save_story_content` writes only `content_data`; source, docs, Story identity, and other production metadata cannot be changed.
+- `bulk_update_story_status` previews and confirms a status-only update for typed Stories. The API writes only `status: awaiting_review`.
 - `reset_story` always requires a preview token. Confirm archives the complete production row atomically, preserves Story/Sheet/DOCX identity, and clears generated type, template, content, images, route, and revision.
 - A Story whose Sheet type/template is set, or whose production is completed/deployed, also requires the exact `RESET <story_id>` confirmation returned by preview.
 - Every content write and reset confirmation is revision-protected. A stale operation returns a conflict instead of overwriting newer content.
@@ -69,6 +70,7 @@ The default Asset Hub endpoint and project namespace need no extra Claude env va
 | `get_story_context` | Read identity, authoritative document link, current content JSON, and revision. |
 | `get_story_rules` | Read fixed workflow, semantic, Quote, catalog, or producer rules through the API. |
 | `start_story` | Start or refresh production after the user confirms a compatible Story type/template pair; locks the authoritative DOCX checksum. |
+| `bulk_update_story_status` | Preview or confirm moving every typed Story to `awaiting_review`; all non-status fields are preserved. |
 | `reset_story` | Preview or confirm an archived, revision-protected reset to `제작 전`; protected Stories require the returned exact confirmation string. |
 | `save_story_content` | Create or modify content/layout JSON with optimistic revision protection. |
 | `validate_story` | Validate the current Story identity and required content arrays. |

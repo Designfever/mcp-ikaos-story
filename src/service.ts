@@ -88,6 +88,14 @@ export async function saveStoryContent(input: {
   };
 }
 
+export async function previewTypedStoryStatusUpdate() {
+  return new StoryApiClient().previewTypedStoryStatusUpdate();
+}
+
+export async function confirmTypedStoryStatusUpdate(expectedStoryIds: string[]) {
+  return new StoryApiClient().confirmTypedStoryStatusUpdate(expectedStoryIds);
+}
+
 export async function previewStoryReset(storyId: string) {
   return new StoryApiClient().resetStoryPreview(storyId);
 }

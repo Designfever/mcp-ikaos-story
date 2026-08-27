@@ -6,10 +6,12 @@ import { STORY_RULES } from './story-api.js';
 import { updateStoryImage, uploadStoryImage } from './image-service.js';
 import {
   confirmStoryReset,
+  confirmTypedStoryStatusUpdate,
   getStoryContext,
   getStoryRule,
   listStorySummaries,
   previewStoryReset,
+  previewTypedStoryStatusUpdate,
   saveStoryContent,
   startStoryProduction,
   validateStory
@@ -129,6 +131,30 @@ function buildServer() {
     async ({ story_id, type, template_id }) => {
       try {
         return output(await startStoryProduction(story_id, type, template_id));
+      } catch (error) {
+        return failure(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    'bulk_update_story_status',
+    {
+      description: 'Preview or confirm a status-only update that moves every typed Story to awaiting_review. Content, images, type, template, source receipt, and revision are never included in the write.',
+      inputSchema: z.object({
+        mode: z.enum(['preview', 'confirm']),
+        status: z.literal('awaiting_review'),
+        selection: z.literal('typed'),
+        expected_story_ids: z.array(z.string().min(1)).optional()
+      })
+    },
+    async ({ mode, expected_story_ids }) => {
+      try {
+        if (mode === 'preview') return output(await previewTypedStoryStatusUpdate());
+        if (!expected_story_ids) {
+          throw new Error('expected_story_ids from preview are required for confirm');
+        }
+        return output(await confirmTypedStoryStatusUpdate(expected_story_ids));
       } catch (error) {
         return failure(error);
       }
