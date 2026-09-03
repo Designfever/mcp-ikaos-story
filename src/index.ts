@@ -167,7 +167,7 @@ function buildServer() {
   server.registerTool(
     'sync_story_identity_from_sheet',
     {
-      description: 'Preview or confirm atomic Story identity synchronization by immutable storyKey, including Sheet Story title and content identity.story. Confirm archives the full pre-change state and returns rollbackId.',
+      description: 'Preview or confirm atomic Story identity synchronization by immutable storyKey. Confirm archives the full pre-change state and returns rollbackId.',
       inputSchema: z.object({ mode: z.enum(['preview', 'confirm']), preview_token: z.string().min(1).optional() })
     },
     async ({ mode, preview_token }) => {
