@@ -16,6 +16,7 @@ export type StoryRuleName = keyof typeof STORY_RULES;
 export type StoryProductionType = 'basic' | 'immersive' | 'narrative';
 
 export type StorySummary = {
+  storyKey: number;
   id: string;
   title: string;
   status: 'ready' | 'waiting';
@@ -185,6 +186,18 @@ export class StoryApiClient {
         expectedStoryIds
       })
     });
+  }
+
+  previewStoryIdentitySync() {
+    return this.request<Record<string, unknown>>('/api/mcp/stories/identity-sync', { method: 'POST', body: JSON.stringify({ mode: 'preview' }) });
+  }
+
+  confirmStoryIdentitySync(previewToken: string) {
+    return this.request<Record<string, unknown>>('/api/mcp/stories/identity-sync', { method: 'POST', body: JSON.stringify({ mode: 'confirm', previewToken }) });
+  }
+
+  rollbackStoryIdentity(rollbackId: string) {
+    return this.request<Record<string, unknown>>('/api/mcp/stories/identity-sync/rollback', { method: 'POST', body: JSON.stringify({ rollbackId }) });
   }
 
   resetStoryPreview(storyId: string) {
