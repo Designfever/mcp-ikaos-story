@@ -20,6 +20,8 @@ try {
     'get_story_context',
     'get_story_rules',
     'list_stories',
+    'sync_story_identity_from_sheet',
+    'rollback_story_identity',
     'reset_story',
     'save_story_content',
     'start_story',

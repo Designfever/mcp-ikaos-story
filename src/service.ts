@@ -96,6 +96,10 @@ export async function confirmTypedStoryStatusUpdate(expectedStoryIds: string[]) 
   return new StoryApiClient().confirmTypedStoryStatusUpdate(expectedStoryIds);
 }
 
+export async function previewStoryIdentitySync() { return new StoryApiClient().previewStoryIdentitySync(); }
+export async function confirmStoryIdentitySync(previewToken: string) { return new StoryApiClient().confirmStoryIdentitySync(previewToken); }
+export async function rollbackStoryIdentity(rollbackId: string) { return new StoryApiClient().rollbackStoryIdentity(rollbackId); }
+
 export async function previewStoryReset(storyId: string) {
   return new StoryApiClient().resetStoryPreview(storyId);
 }

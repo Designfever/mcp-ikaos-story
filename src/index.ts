@@ -5,13 +5,16 @@ import * as z from 'zod/v4';
 import { STORY_RULES } from './story-api.js';
 import { updateStoryImage, uploadStoryImage } from './image-service.js';
 import {
+  confirmStoryIdentitySync,
   confirmStoryReset,
   confirmTypedStoryStatusUpdate,
   getStoryContext,
   getStoryRule,
   listStorySummaries,
+  previewStoryIdentitySync,
   previewStoryReset,
   previewTypedStoryStatusUpdate,
+  rollbackStoryIdentity,
   saveStoryContent,
   startStoryProduction,
   validateStory
@@ -159,6 +162,27 @@ function buildServer() {
         return failure(error);
       }
     }
+  );
+
+  server.registerTool(
+    'sync_story_identity_from_sheet',
+    {
+      description: 'Preview or confirm atomic Story identity synchronization by immutable storyKey. Confirm archives the full pre-change state and returns rollbackId.',
+      inputSchema: z.object({ mode: z.enum(['preview', 'confirm']), preview_token: z.string().min(1).optional() })
+    },
+    async ({ mode, preview_token }) => {
+      try {
+        if (mode === 'preview') return output(await previewStoryIdentitySync());
+        if (!preview_token) throw new Error('preview_token from preview is required for confirm');
+        return output(await confirmStoryIdentitySync(preview_token));
+      } catch (error) { return failure(error); }
+    }
+  );
+
+  server.registerTool(
+    'rollback_story_identity',
+    { description: 'Restore the complete Story identity snapshot for one rollbackId.', inputSchema: z.object({ rollback_id: z.string().uuid() }) },
+    async ({ rollback_id }) => { try { return output(await rollbackStoryIdentity(rollback_id)); } catch (error) { return failure(error); } }
   );
 
   server.registerTool(
